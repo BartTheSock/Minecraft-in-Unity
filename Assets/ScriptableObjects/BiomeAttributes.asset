@@ -1,0 +1,95 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 75bf5701e109dab499a36328a70c9f56, type: 3}
+  m_Name: BiomeAttributes
+  m_EditorClassIdentifier: Assembly-CSharp::BiomeAttributes
+  biomeName: Plains
+  solidGroundHeight: 128
+  terrainHeight: 64
+  terrainScale: 0.2
+  tree1ZoneScale: 1.8
+  tree1ZoneThreshold: 0.65
+  tree1PlacementScale: 15
+  tree1PlacementThreshold: 0.85
+  maxTree1Height: 4
+  minTree1Height: 2
+  tree2ZoneScale: 1.5
+  tree2ZoneThreshold: 0.75
+  tree2PlacementScale: 15
+  tree2PlacementThreshold: 0.85
+  maxTree2Height: 5
+  minTree2Height: 3
+  foliage: []
+  lodes:
+  - lodeName: Coal 1
+    blockID: 9
+    blocksToChange: 0300
+    minHeight: 200
+    maxHeight: 384
+    scale: 0.2
+    threshold: 0.75
+  - lodeName: Coal 2
+    blockID: 9
+    blocksToChange: 0300
+    minHeight: 64
+    maxHeight: 256
+    scale: 0.3
+    threshold: 0.7
+  - lodeName: Iron 1
+    blockID: 10
+    blocksToChange: 0300
+    minHeight: 144
+    maxHeight: 384
+    scale: 0.6
+    threshold: 0.75
+  - lodeName: Iron 2
+    blockID: 10
+    blocksToChange: 0300
+    minHeight: 64
+    maxHeight: 96
+    scale: 0.3
+    threshold: 0.7
+  - lodeName: Iron 3
+    blockID: 10
+    blocksToChange: 0300
+    minHeight: 1
+    maxHeight: 136
+    scale: 0.25
+    threshold: 0.8
+  - lodeName: Gold
+    blockID: 11
+    blocksToChange: 0300
+    minHeight: 1
+    maxHeight: 96
+    scale: 0.5
+    threshold: 0.85
+  - lodeName: Diamond
+    blockID: 45
+    blocksToChange: 0300
+    minHeight: 1
+    maxHeight: 80
+    scale: 0.4
+    threshold: 0.88
+  - lodeName: Small Caves
+    blockID: 0
+    blocksToChange: 01000200030009000a000b002d00
+    minHeight: 80
+    maxHeight: 256
+    scale: 0.1
+    threshold: 0.7
+  - lodeName: Large Caves
+    blockID: 0
+    blocksToChange: 030009000a000b002d00
+    minHeight: 1
+    maxHeight: 96
+    scale: 0.08
+    threshold: 0.6
