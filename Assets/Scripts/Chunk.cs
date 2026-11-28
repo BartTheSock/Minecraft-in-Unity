@@ -1,10 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Threading;
-using Unity.VisualScripting;
+//using System.Threading;
 using UnityEngine;
 using UnityEngine.UIElements;
-using static UnityEditor.PlayerSettings;
+
 
 public class Chunk
 {
@@ -31,27 +30,27 @@ public class Chunk
     int leavesVertexIndex = 0;
     int birchLeavesVertexIndex = 0;
     int spruceLeavesVertexIndex = 0;
+
     List<Vector3> vertices = new List<Vector3>();
     List<int> triangles = new List<int>();
-    List<int> transparentTriangles = new List<int>();
-    List<int> translucentTriangles = new List<int>();
-    List<int> grassTriangles = new List<int>();
-    List<int> foliageTriangles = new List<int>();
-    Material[] materials = new Material[5];
     List<Vector2> uvs = new List<Vector2>();
     List<Color> colors = new List<Color>();
+    
     List<Vector3> grassSideVertices = new List<Vector3>();
     List<int> grassSideTriangles = new List<int>();
     List<Vector2> grassSideUvs = new List<Vector2>();
     List<Color> grassSideColors = new List<Color>();
+    
     List<Vector3> leavesVertices = new List<Vector3>();
     List<int> leavesTriangles = new List<int>();
     List<Vector2> leavesUvs = new List<Vector2>();
     List<Color> leavesColors = new List<Color>();
+    
     List<Vector3> birchLeavesVertices = new List<Vector3>();
     List<int> birchLeavesTriangles = new List<int>();
     List<Vector2> birchLeavesUvs = new List<Vector2>();
     List<Color> birchLeavesColors = new List<Color>();
+    
     List<Vector3> spruceLeavesVertices = new List<Vector3>();
     List<int> spruceLeavesTriangles = new List<int>();
     List<Vector2> spruceLeavesUvs = new List<Vector2>();
@@ -67,16 +66,11 @@ public class Chunk
 
     private bool _isActive;
     private bool isVoxelMapPopulated = false;
-    private bool threadLocked = false;
 
-    public Chunk(ChunkCoordinate _coordinate, World _world, bool generateOnLoad)
+    public Chunk(ChunkCoordinate _coordinate, World _world)
     {
         coordinate = _coordinate;
         world = _world;
-        IsActive = true;
-
-        if (generateOnLoad)
-            Initialize();
     }
 
     public void Initialize()
@@ -105,12 +99,6 @@ public class Chunk
         spruceLeavesMeshFilter = spruceLeaves.AddComponent<MeshFilter>();
         spruceLeavesMeshRenderer = spruceLeaves.AddComponent<MeshRenderer>();
 
-        // materials[0] = world.material;
-        // materials[1] = world.transparentMaterial;
-        // materials[2] = world.translucentMaterial;
-        // materials[3] = world.grassMaterial;
-        // materials[4] = world.foliageMaterial;
-        // meshRenderer.materials = materials;
         meshRenderer.material = world.material;
         grassSideMeshRenderer.material = world.grassMaterial;
         leavesMeshRenderer.material = world.foliageMaterial;
@@ -122,13 +110,7 @@ public class Chunk
         chunkObject.name = "Chunk " + coordinate.x + ", " + coordinate.z;
         Position = chunkObject.transform.position;
 
-        if (world.enableThreading)
-        {
-            Thread myThread = new Thread(new ThreadStart(PopulateVoxelMap));
-            myThread.Start();
-        }
-        else
-            PopulateVoxelMap();
+        PopulateVoxelMap();
     }
 
     void PopulateVoxelMap()
@@ -144,25 +126,16 @@ public class Chunk
             }
         }
 
-        _updateChunk();
         isVoxelMapPopulated = true;
+
+        lock (world.ChunkUpdateThreadLock)
+        {
+            world.chunksToUpdate.Add(this);
+        }
     }
 
     public void UpdateChunk()
     {
-        if (world.enableThreading)
-        {
-            Thread myThread = new Thread(new ThreadStart(_updateChunk));
-            myThread.Start();
-        }
-        else
-            _updateChunk();
-    }
-
-    private void _updateChunk()
-    {
-        threadLocked = true;
-
         while (modifications.Count > 0)
         {
             VoxelMod v = modifications.Dequeue();
@@ -185,12 +158,7 @@ public class Chunk
             }
         }
 
-        lock (world.chunksToDraw)
-        {
-            world.chunksToDraw.Enqueue(this);
-        }
-
-        threadLocked = false;
+        world.chunksToDraw.Enqueue(this);
     }
 
     void ClearMeshData()
@@ -198,27 +166,27 @@ public class Chunk
         vertexIndex = 0;
         vertices.Clear();
         triangles.Clear();
-        // transparentTriangles.Clear();
-        // translucentTriangles.Clear();
-        // grassTriangles.Clear();
-        // foliageTriangles.Clear();
         uvs.Clear();
         colors.Clear();
+
         grassSideVertexIndex = 0;
         grassSideVertices.Clear();
         grassSideTriangles.Clear();
         grassSideUvs.Clear();
         grassSideColors.Clear();
+        
         leavesVertexIndex = 0;
         leavesVertices.Clear();
         leavesTriangles.Clear();
         leavesUvs.Clear();
         leavesColors.Clear();
+        
         birchLeavesVertexIndex = 0;
         birchLeavesVertices.Clear();
         birchLeavesTriangles.Clear();
         birchLeavesUvs.Clear();
         birchLeavesColors.Clear();
+        
         spruceLeavesVertexIndex = 0;
         spruceLeavesVertices.Clear();
         spruceLeavesTriangles.Clear();
@@ -241,7 +209,7 @@ public class Chunk
     {
         get
         {
-            if (!isVoxelMapPopulated || threadLocked)
+            if (!isVoxelMapPopulated)
                 return false;
             else
                 return true;
@@ -267,9 +235,12 @@ public class Chunk
 
         voxelMap[xCheck, yCheck, zCheck].id = newID;
 
-        UpdateSurroundingVoxels(xCheck, yCheck, zCheck);
+        lock (world.ChunkUpdateThreadLock)
+        {
+            world.chunksToUpdate.Insert(0, this);
+            UpdateSurroundingVoxels(xCheck, yCheck, zCheck);
+        }
 
-        UpdateChunk();
     }
 
     void UpdateSurroundingVoxels(int x, int y, int z)
@@ -281,7 +252,7 @@ public class Chunk
             Vector3 currentVoxel = thisVoxel + VoxelData.faceChecks[p];
 
             if (!IsVoxelInChunk((int)currentVoxel.x, (int)currentVoxel.y, (int)currentVoxel.z))
-                world.GetChunkFromVector3(currentVoxel + Position).UpdateChunk();
+                world.chunksToUpdate.Insert(0, world.GetChunkFromVector3(currentVoxel + Position));
         }
     }
 

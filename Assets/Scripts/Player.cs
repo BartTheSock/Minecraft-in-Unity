@@ -12,7 +12,6 @@ public class Player : MonoBehaviour
     public bool isGrounded;
     public bool isSprinting;
     public bool isSneaking;
-    public bool isCameraFast;
 
     private Camera playerCamera;
     private World world;
@@ -22,9 +21,8 @@ public class Player : MonoBehaviour
     public float sneakSpeed = 1.3f;
     public float jumpForce = 9f;
     public float gravity = -28.4f;
-    public float baseMouseHorizontalSpeed = 20f;
-    public float baseMouseVerticalSpeed = 5f;
-    public float mouseSpeedMultiplier;
+    public float baseMouseHorizontalSpeed = 4f;
+    public float baseMouseVerticalSpeed = 1f;
 
     public float playerWidth = 0.3f;
     public float playerHeight = 1.8f;
@@ -54,7 +52,6 @@ public class Player : MonoBehaviour
     private InputAction mouseScrollAction;
     private InputAction keyboardScrollAction;
     private InputAction inventoryAction;
-    private InputAction cameraSpeedAction;
 
     public Transform highlightBlock;
     public Transform placeBlock;
@@ -77,7 +74,6 @@ public class Player : MonoBehaviour
         isSneaking = false;
         eyeLevel = normalEyeLevel;
         playerCamera.transform.position = transform.position + new Vector3(0f, eyeLevel, 0f);
-        isCameraFast = true;
     }
 
     private void OnEnable()
@@ -92,7 +88,6 @@ public class Player : MonoBehaviour
         mouseScrollAction = gameControls.Player.MouseScroll;
         keyboardScrollAction = gameControls.Player.KeyboardScroll;
         inventoryAction = gameControls.Player.CreativeInventory;
-        cameraSpeedAction = gameControls.Player.ToggleCameraSpeed;
         moveAction.Enable();
         lookAction.Enable();
         jumpAction.Enable();
@@ -103,7 +98,6 @@ public class Player : MonoBehaviour
         mouseScrollAction.Enable();
         keyboardScrollAction.Enable();
         inventoryAction.Enable();
-        cameraSpeedAction.Enable();
     }
 
     private void OnDisable()
@@ -118,7 +112,6 @@ public class Player : MonoBehaviour
         mouseScrollAction.Disable();
         keyboardScrollAction.Disable();
         inventoryAction.Disable();
-        cameraSpeedAction.Disable();
     }
 
     private void FixedUpdate()
@@ -186,12 +179,8 @@ public class Player : MonoBehaviour
     {
         horizontal = moveAction.ReadValue<Vector2>().x;
         vertical = moveAction.ReadValue<Vector2>().y;
-        if (isCameraFast)
-            mouseSpeedMultiplier = 1f;
-        else
-            mouseSpeedMultiplier = 0.2f;
-        mouseHorizontal = lookAction.ReadValue<Vector2>().x * baseMouseHorizontalSpeed * mouseSpeedMultiplier * Time.fixedDeltaTime;
-        mouseVertical = lookAction.ReadValue<Vector2>().y * baseMouseVerticalSpeed * mouseSpeedMultiplier * Time.fixedDeltaTime;
+        mouseHorizontal = lookAction.ReadValue<Vector2>().x * baseMouseHorizontalSpeed * world.settings.mouseSensitivity * Time.fixedDeltaTime;
+        mouseVertical = lookAction.ReadValue<Vector2>().y * baseMouseVerticalSpeed * world.settings.mouseSensitivity * Time.fixedDeltaTime;
         verticalDirection -= mouseVertical;
         verticalDirection = Mathf.Clamp(verticalDirection, -89.999f, 89.999f);
 
@@ -200,9 +189,6 @@ public class Player : MonoBehaviour
 
         if (sneakAction.WasPressedThisFrame())
             isSneaking = !isSneaking;
-
-        if (cameraSpeedAction.WasPressedThisFrame())
-            isCameraFast = !isCameraFast;
 
         if (isGrounded && jumpAction.IsPressed())
             jumpRequest = true;
@@ -335,12 +321,14 @@ public class Player : MonoBehaviour
 
     private float CheckDownSpeed(float downSpeed)
     {
-        if ((
-            world.CheckForVoxel(new Vector3(transform.position.x - playerWidth, transform.position.y + downSpeed, transform.position.z - playerWidth)) ||
+        if ((world.CheckForVoxel(new Vector3(transform.position.x - playerWidth, transform.position.y + downSpeed, transform.position.z - playerWidth)) ||
             world.CheckForVoxel(new Vector3(transform.position.x + playerWidth, transform.position.y + downSpeed, transform.position.z - playerWidth)) ||
             world.CheckForVoxel(new Vector3(transform.position.x + playerWidth, transform.position.y + downSpeed, transform.position.z + playerWidth)) ||
-            world.CheckForVoxel(new Vector3(transform.position.x - playerWidth, transform.position.y + downSpeed, transform.position.z + playerWidth))) &&
-            world.CheckForVoxel(new Vector3(transform.position.x, transform.position.y + downSpeed, transform.position.z)))
+            world.CheckForVoxel(new Vector3(transform.position.x - playerWidth, transform.position.y + downSpeed, transform.position.z + playerWidth))) && (
+            world.CheckForVoxel(new Vector3(transform.position.x - (playerWidth * 0.8f), transform.position.y + downSpeed, transform.position.z - (playerWidth * 0.8f))) ||
+            world.CheckForVoxel(new Vector3(transform.position.x + (playerWidth * 0.8f), transform.position.y + downSpeed, transform.position.z - (playerWidth * 0.8f))) ||
+            world.CheckForVoxel(new Vector3(transform.position.x + (playerWidth * 0.8f), transform.position.y + downSpeed, transform.position.z + (playerWidth * 0.8f))) ||
+            world.CheckForVoxel(new Vector3(transform.position.x - (playerWidth * 0.8f), transform.position.y + downSpeed, transform.position.z + (playerWidth * 0.8f)))))
         {
             isGrounded = true;
             verticalMomentum = 0;
@@ -359,8 +347,11 @@ public class Player : MonoBehaviour
         if ((world.CheckForVoxel(new Vector3(transform.position.x - playerWidth, transform.position.y + upSpeed + playerHeight, transform.position.z - playerWidth)) ||
             world.CheckForVoxel(new Vector3(transform.position.x + playerWidth, transform.position.y + upSpeed + playerHeight, transform.position.z - playerWidth)) ||
             world.CheckForVoxel(new Vector3(transform.position.x + playerWidth, transform.position.y + upSpeed + playerHeight, transform.position.z + playerWidth)) ||
-            world.CheckForVoxel(new Vector3(transform.position.x - playerWidth, transform.position.y + upSpeed + playerHeight, transform.position.z + playerWidth))) &&
-            world.CheckForVoxel(new Vector3(transform.position.x, transform.position.y + upSpeed + playerHeight, transform.position.z)))
+            world.CheckForVoxel(new Vector3(transform.position.x - playerWidth, transform.position.y + upSpeed + playerHeight, transform.position.z + playerWidth))) && (
+            world.CheckForVoxel(new Vector3(transform.position.x - (playerWidth * 0.8f), transform.position.y + upSpeed + playerHeight, transform.position.z - (playerWidth * 0.8f))) ||
+            world.CheckForVoxel(new Vector3(transform.position.x + (playerWidth * 0.8f), transform.position.y + upSpeed + playerHeight, transform.position.z - (playerWidth * 0.8f))) ||
+            world.CheckForVoxel(new Vector3(transform.position.x + (playerWidth * 0.8f), transform.position.y + upSpeed + playerHeight, transform.position.z + (playerWidth * 0.8f))) ||
+            world.CheckForVoxel(new Vector3(transform.position.x - (playerWidth * 0.8f), transform.position.y + upSpeed + playerHeight, transform.position.z + (playerWidth * 0.8f)))))
         {
             verticalMomentum = 0;
             return 0;
